@@ -1,0 +1,27 @@
+git clone https://github.com/kubernetes-sigs/kubespray.git
+cd kubespray
+pip install -r requirements.txt
+rm -Rf inventory/mycluster/
+cp -rfp inventory/sample inventory/mycluster
+declare -a IPS=($(for n in $(seq 1 4); do ../get-vm-ip.sh node$n; done))
+echo ${IPS[@]}
+CONFIG_FILE=inventory/mycluster/hosts.yml \
+  python3 contrib/inventory_builder/inventory.py ${IPS[@]}
+  
+echo '  vars:' >>  inventory/mycluster/hosts.yml
+echo '    kubeconfig_localhost: true' >>  inventory/mycluster/hosts.yml
+
+export ANSIBLE_REMOTE_USER=ansible
+ansible-playbook -i inventory/mycluster/hosts.yml --become --become-user=root cluster.yml --private-key=../id_rsa
+    
+Install kubectl
+sudo snap install kubectl --classic
+mkdir ~/.kube
+cp inventory/mycluster/artifacts/admin.conf ~/.kube/config
+
+#dashboard URL
+http://localhost:8001/api/v1/namespaces/kube-system/services/https:kubernetes-dashboard:/proxy/#/login
+
+kubectl create clusterrolebinding dashboard-admin -n default  --clusterrole=cluster-admin  --serviceaccount=kube-system:clusterrole-aggregation-controller
+kubectl -n kube-system describe secrets    `kubectl -n kube-system get secrets | awk '/clusterrole-aggregation-controller/ {print $1}'`        | awk '/token:/ {print $2}'
+
