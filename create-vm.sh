@@ -89,12 +89,6 @@ if [[ -z $KS_FQN ]]; then
     exit 1
 fi
 
-if ! [[ -f $ISO_FQN ]]; then
-    echo "ERROR: $ISO_FQN file not found"
-    usage
-    exit 1
-fi
-
 if ! [[ -f $KS_FQN ]]; then
     echo "ERROR: $KS_FQN file not found"
     usage
